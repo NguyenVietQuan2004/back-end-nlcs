@@ -47,6 +47,26 @@ export const deleteOrder = async (req, res) => {
   }
 };
 
+export const getUserOrders = async (req, res) => {
+  try {
+    const data = await orderService.getUserOrders(req.query.user_id);
+
+    res.status(200).json({ success: true, statusCode: 200, message: "Get order success.", data: data, error: null });
+  } catch (error) {
+    handleError(res, error, "Get order");
+  }
+};
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const data = await orderService.updateOrderStatus(req.body);
+    res
+      .status(200)
+      .json({ success: true, statusCode: 200, message: "updated order success.", data: data, error: null });
+  } catch (error) {
+    handleError(res, error, "updated order");
+  }
+};
 // [GET] /order
 export const overviewOrder = async (req, res) => {
   try {

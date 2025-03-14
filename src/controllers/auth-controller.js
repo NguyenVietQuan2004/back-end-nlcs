@@ -37,6 +37,7 @@ export const login = async (req, res) => {
       statusCode: 200,
       message: "Login successful.",
       data: {
+        _id: user._id || "",
         email: user.email || "",
         phone_number: user.phone_number || "",
         fullname: user.fullname,

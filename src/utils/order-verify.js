@@ -25,6 +25,8 @@ export const orderVerify = (method, data) => {
       break;
 
     case "delete":
+      validateId(data, "_id");
+      break;
     case "getAll":
     case "overview":
       validateId(data, "store_id");

@@ -44,7 +44,6 @@ const getImagesHomePage = async ({ store_id }) => {
   }
 
   const listProduct = await ProductModel.find({ store_id, is_archived: false }).sort({ createdAt: -1 }).limit(5);
-
   const productWithHighestSold = await ProductVariantModel.aggregate([
     {
       $group: {
@@ -53,26 +52,94 @@ const getImagesHomePage = async ({ store_id }) => {
       },
     },
     { $sort: { totalSold: -1 } },
-    { $limit: 1 },
+    { $limit: 9 }, // 🔥 Lấy 10 sản phẩm thay vì 1
   ]);
-  const productBestSeller = productWithHighestSold.length
-    ? await ProductModel.findById(productWithHighestSold[0]._id)
-    : null;
 
-  const productHighestSale = await ProductModel.findOne({ store_id }).sort({ sale: -1 }).limit(1);
-  const listProductNewDiscover = await ProductModel.find({
-    store_id,
-    createdAt: {
-      $gte: new Date().setHours(0, 0, 0, 0),
-      $lt: new Date().setHours(23, 59, 59, 999),
+  // Lấy danh sách các `_id` của sản phẩm bán chạy nhất
+  const bestSellerIds = productWithHighestSold.map((item) => item._id);
+
+  const productBestSeller = await ProductModel.aggregate([
+    {
+      $match: { _id: { $in: bestSellerIds } }, // 🔥 Lọc theo danh sách 10 sản phẩm thay vì chỉ 1
     },
-  }).sort({ createdAt: -1 });
+    {
+      $lookup: {
+        from: "productvariants",
+        localField: "_id",
+        foreignField: "product_id",
+        as: "product_variants",
+      },
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category_id",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: "$category" },
+  ]);
+
+  const productHighestSales = await ProductModel.aggregate([
+    { $match: { store_id: new mongoose.Types.ObjectId(store_id) } },
+    { $sort: { sales: -1 } }, // Sắp xếp theo sale giảm dần
+    { $limit: 9 }, // Lấy 1 sản phẩm có sale cao nhất
+    {
+      $lookup: {
+        from: "productvariants",
+        localField: "_id",
+        foreignField: "product_id",
+        as: "product_variants",
+      },
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category_id",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: "$category" },
+  ]);
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+  const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+  const listProductNewDiscover = await ProductModel.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: todayStart, $lt: todayEnd },
+        store_id: new mongoose.Types.ObjectId(store_id),
+      },
+    },
+    { $sort: { createdAt: -1 } }, // Sắp xếp theo thời gian mới nhất
+    {
+      $lookup: {
+        from: "productvariants",
+        localField: "_id",
+        foreignField: "product_id",
+        as: "product_variants",
+      },
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "category_id",
+        foreignField: "_id",
+        as: "category",
+      },
+    },
+    { $unwind: "$category" },
+  ]);
+
+  // Trả về kết quả
   return {
     ImagesHomePage: imagesHomePage,
     listProductNewDiscover,
-    listProductMostPopular: listProduct, // còn cái này
-    productBestSeller,
-    productHighestSales: productHighestSale,
+    // listProductMostPopular: listProduct, // còn cái này
+    productBestSeller: productBestSeller,
+    productHighestSales: productHighestSales,
   };
 };
 
