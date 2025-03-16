@@ -103,17 +103,19 @@ const getImagesHomePage = async ({ store_id }) => {
     },
     { $unwind: "$category" },
   ]);
+  console.log(productHighestSales);
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
   const listProductNewDiscover = await ProductModel.aggregate([
     {
       $match: {
-        createdAt: { $gte: todayStart, $lt: todayEnd },
+        // createdAt: { $gte: todayStart, $lt: todayEnd },
         store_id: new mongoose.Types.ObjectId(store_id),
       },
     },
     { $sort: { createdAt: -1 } }, // Sắp xếp theo thời gian mới nhất
+    { $limit: 10 },
     {
       $lookup: {
         from: "productvariants",
@@ -132,7 +134,7 @@ const getImagesHomePage = async ({ store_id }) => {
     },
     { $unwind: "$category" },
   ]);
-
+  console.log(listProductNewDiscover);
   // Trả về kết quả
   return {
     ImagesHomePage: imagesHomePage,
