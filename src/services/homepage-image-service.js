@@ -43,7 +43,6 @@ const getImagesHomePage = async ({ store_id }) => {
     throw new NotFoundError("ImagesHomePage not found for this store.");
   }
 
-  const listProduct = await ProductModel.find({ store_id, is_archived: false }).sort({ createdAt: -1 }).limit(5);
   const productWithHighestSold = await ProductVariantModel.aggregate([
     {
       $group: {
@@ -52,12 +51,9 @@ const getImagesHomePage = async ({ store_id }) => {
       },
     },
     { $sort: { totalSold: -1 } },
-    { $limit: 9 }, // 🔥 Lấy 10 sản phẩm thay vì 1
+    { $limit: 9 },
   ]);
-
-  // Lấy danh sách các `_id` của sản phẩm bán chạy nhất
-  const bestSellerIds = productWithHighestSold.map((item) => item._id);
-
+  const bestSellerIds = productWithHighestSold.map((item) => new mongoose.Types.ObjectId(item._id));
   const productBestSeller = await ProductModel.aggregate([
     {
       $match: { _id: { $in: bestSellerIds } }, // 🔥 Lọc theo danh sách 10 sản phẩm thay vì chỉ 1
@@ -78,13 +74,13 @@ const getImagesHomePage = async ({ store_id }) => {
         as: "category",
       },
     },
-    { $unwind: "$category" },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
   ]);
 
   const productHighestSales = await ProductModel.aggregate([
     { $match: { store_id: new mongoose.Types.ObjectId(store_id) } },
-    { $sort: { sales: -1 } }, // Sắp xếp theo sale giảm dần
-    { $limit: 9 }, // Lấy 1 sản phẩm có sale cao nhất
+    { $sort: { sales: -1 } },
+    { $limit: 9 },
     {
       $lookup: {
         from: "productvariants",
@@ -103,7 +99,6 @@ const getImagesHomePage = async ({ store_id }) => {
     },
     { $unwind: "$category" },
   ]);
-  console.log(productHighestSales);
   const now = new Date();
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
@@ -134,7 +129,6 @@ const getImagesHomePage = async ({ store_id }) => {
     },
     { $unwind: "$category" },
   ]);
-  console.log(listProductNewDiscover);
   // Trả về kết quả
   return {
     ImagesHomePage: imagesHomePage,

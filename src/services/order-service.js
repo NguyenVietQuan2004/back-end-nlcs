@@ -136,6 +136,7 @@ const baseQuery = [
       address: { $first: "$address" },
       createdAt: { $first: "$createdAt" },
       updatedAt: { $first: "$updatedAt" },
+      paid_at: { $first: "$paid_at" },
       order_items: {
         $push: {
           quantity: "$order_items.quantity",
@@ -268,13 +269,14 @@ const createOrder = async ({ store_id, items, phone, address, is_paid, user_id }
 
 const getAllOrders = async (store_id) => {
   orderVerify("getAll", store_id);
-
   const orderDetails = await OrderModel.aggregate([
     {
       $match: { store_id: new mongoose.Types.ObjectId(store_id) },
     },
     ...baseQuery,
   ]);
+  console.log(orderDetails, "all orrder");
+
   return orderDetails;
 };
 const getUserOrders = async (user_id) => {
@@ -298,7 +300,7 @@ const updateOrder = async ({ order_id, is_paid }) => {
   if (is_paid) {
     updateData.paid_at = new Date();
   } else {
-    updateData.$unset = { paid_at: "" };
+    updateData.paid_at = ""; //
   }
 
   const updatedOrder = await OrderModel.findByIdAndUpdate(order_id, updateData, { new: true });
@@ -340,8 +342,6 @@ const overviewOrder = async (store_id) => {
   };
 };
 const updateOrderStatus = async ({ order_id, is_paid }) => {
-  console.log(is_paid, typeof is_paid);
-
   if (!mongoose.Types.ObjectId.isValid(order_id)) {
     throw new BadRequestError("Invalid user_id");
   }
@@ -353,9 +353,10 @@ const updateOrderStatus = async ({ order_id, is_paid }) => {
   } else {
     updateData.$unset = { paid_at: "" };
   }
-
+  console.log(updateData);
   // Find and update the order
   const updatedOrder = await OrderModel.findByIdAndUpdate(order_id, updateData, { new: true });
+  console.log(updatedOrder);
   if (!updatedOrder) {
     throw new BadRequestError("Order not found");
   }
