@@ -51,7 +51,7 @@ const getImagesHomePage = async ({ store_id }) => {
       },
     },
     { $sort: { totalSold: -1 } },
-    { $limit: 9 },
+    { $limit: 10 },
   ]);
   const bestSellerIds = productWithHighestSold.map((item) => new mongoose.Types.ObjectId(item._id));
   const productBestSeller = await ProductModel.aggregate([
