@@ -163,6 +163,12 @@ const getAllProducts = async (queryParams) => {
   }
 
   // customPipeline.push({ $project: { category_id: 0 } });
+  customPipeline.push(
+    {
+      $addFields: { randomValue: { $rand: {} } }, // Thêm trường randomValue với số ngẫu nhiên từ 0-1
+    },
+    { $sort: { randomValue: 1 } } // Sắp xếp theo giá trị random
+  );
 
   const [listProduct, totalProduct] = await Promise.all([
     ProductModel.aggregate([...basePipeline, ...customPipeline]),
