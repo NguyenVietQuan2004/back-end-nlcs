@@ -30,7 +30,6 @@ const coreQuery = [
 
 const createProduct = async (product) => {
   const { error, value } = productVerify.productSchema.validate(product);
-  // console.log(error.details);
   if (error) throw new BadRequestError("Missing data input create product");
 
   const { product_variants, ...productData } = value;
@@ -219,7 +218,6 @@ const updateCategoryAttributes = async (attributesProduct, attributesCategory, c
 
 const updateProduct = async ({ _id, ...productData }) => {
   const { error, value } = productVerify.productSchema.validate(productData);
-  // console.log(error.details, "error");
   if (error) {
     throw new BadRequestError("Missing data input for updating product.");
   }

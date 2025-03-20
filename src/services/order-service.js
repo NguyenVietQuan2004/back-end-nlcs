@@ -275,12 +275,9 @@ const getAllOrders = async (store_id) => {
     },
     ...baseQuery,
   ]);
-  console.log(orderDetails, "all orrder");
-
   return orderDetails;
 };
 const getUserOrders = async (user_id) => {
-  console.log(user_id);
   if (!mongoose.Types.ObjectId.isValid(user_id)) {
     throw new BadRequestError("Invalid user_id");
   }
@@ -289,7 +286,7 @@ const getUserOrders = async (user_id) => {
     {
       $match: { user_id: new mongoose.Types.ObjectId(user_id) },
     },
-    ...baseQuery, // 🔹 Tái sử dụng baseQuery để lấy đầy đủ thông tin đơn hàng
+    ...baseQuery,
   ]);
 
   return userOrders;
@@ -346,17 +343,13 @@ const updateOrderStatus = async ({ order_id, is_paid }) => {
     throw new BadRequestError("Invalid user_id");
   }
 
-  // Prepare the update data
   const updateData = { is_paid };
   if (is_paid) {
     updateData.paid_at = new Date();
   } else {
     updateData.$unset = { paid_at: "" };
   }
-  console.log(updateData);
-  // Find and update the order
   const updatedOrder = await OrderModel.findByIdAndUpdate(order_id, updateData, { new: true });
-  console.log(updatedOrder);
   if (!updatedOrder) {
     throw new BadRequestError("Order not found");
   }

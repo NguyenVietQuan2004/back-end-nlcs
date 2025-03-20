@@ -17,7 +17,6 @@ export const createOrder = async (req, res) => {
 export const getAllOrders = async (req, res) => {
   try {
     const data = await orderService.getAllOrders(req.query.store_id);
-    console.log(data);
     res
       .status(200)
       .json({ success: true, statusCode: 200, message: "Get all orders success.", data: data, error: null });
