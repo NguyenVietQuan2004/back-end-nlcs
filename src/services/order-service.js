@@ -6,65 +6,10 @@ import OrderModel from "../models/order/order-model.js";
 import ProductModel from "../models/product/product-model.js";
 import { orderVerify } from "../utils/order-verify.js";
 
-// const baseQuery = [
-//   {
-//     $lookup: {
-//       from: "orderitems",
-//       localField: "_id",
-//       foreignField: "order_id",
-//       as: "order_items",
-//     },
-//   },
-//   {
-//     $unwind: "$order_items", // ✅ Chỉ unwind order_items trước
-//   },
-//   {
-//     $lookup: {
-//       from: "productvariants",
-//       localField: "order_items.product_variant_id",
-//       foreignField: "_id",
-//       as: "product_variant",
-//     },
-//   },
-//   {
-//     $unwind: { path: "$product_variant", preserveNullAndEmptyArrays: true }, // ✅ Tránh mất dữ liệu nếu không có product_variant
-//   },
-//   {
-//     $lookup: {
-//       from: "products",
-//       localField: "product_variant.product_id",
-//       foreignField: "_id",
-//       as: "product",
-//     },
-//   },
-//   {
-//     $unwind: { path: "$product", preserveNullAndEmptyArrays: true }, // ✅ Tránh mất dữ liệu nếu không có product
-//   },
-//   {
-//     $group: {
-//       _id: "$_id",
-//       user_id: { $first: "$user_id" },
-//       store_id: { $first: "$store_id" },
-//       is_paid: { $first: "$is_paid" },
-//       phone: { $first: "$phone" },
-//       address: { $first: "$address" },
-//       createdAt: { $first: "$createdAt" },
-//       updatedAt: { $first: "$updatedAt" },
-//       order_items: {
-//         $push: {
-//           quantity: "$order_items.quantity",
-//           snapshot_price: "$order_items.snapshot_price",
-//           product_variant: "$product_variant",
-//           product: "$product",
-//         },
-//       },
-//     },
-//   },
-// ];
 const baseQuery = [
   {
     $lookup: {
-      from: "users", // 🔹 Tham chiếu đến bảng users
+      from: "users",
       localField: "user_id",
       foreignField: "_id",
       as: "user",
@@ -72,7 +17,7 @@ const baseQuery = [
   },
   {
     $set: {
-      user: { $arrayElemAt: ["$user.fullname", 0] }, // ✅ Chỉ lấy fullName, loại bỏ toàn bộ thông tin khác
+      user: { $arrayElemAt: ["$user.fullname", 0] },
     },
   },
   {
@@ -105,10 +50,9 @@ const baseQuery = [
       as: "products",
     },
   },
-  // ❌ Không unwind products để giữ nguyên mảng toàn bộ products của product_variant
   {
     $lookup: {
-      from: "productvariants", // ✅ Lấy toàn bộ biến thể của mỗi product
+      from: "productvariants",
       localField: "products._id",
       foreignField: "product_id",
       as: "all_product_variants",
@@ -116,10 +60,9 @@ const baseQuery = [
   },
   {
     $set: {
-      product: { $arrayElemAt: ["$products", 0] }, // ✅ Lấy object đầu tiên của mảng products
+      product: { $arrayElemAt: ["$products", 0] },
     },
   },
-  // 🔹 Bước 2: Gán product_variants sau khi product đã được set
   {
     $set: {
       "product.product_variants": "$all_product_variants", // ✅ Gán variants vào product
@@ -142,73 +85,13 @@ const baseQuery = [
           quantity: "$order_items.quantity",
           snapshot_price: "$order_items.snapshot_price",
           product_variant_id: "$product_variant._id",
-          product: "$product", // ✅ Giữ nguyên product với toàn bộ variants
+          product: "$product",
         },
       },
     },
   },
 ];
 
-// const baseQuery = [
-//   {
-//     $lookup: {
-//       from: "orderitems",
-//       localField: "_id",
-//       foreignField: "order_id",
-//       as: "order_items",
-//     },
-//   },
-//   {
-//     $lookup: {
-//       from: "productvariants",
-//       localField: "order_items.product_variant_id",
-//       foreignField: "_id",
-//       as: "product_variants",
-//     },
-//   },
-//   {
-//     $lookup: {
-//       from: "products",
-//       localField: "product_variants.product_id",
-//       foreignField: "_id",
-//       as: "products",
-//     },
-//   },
-//   {
-//     $unwind: "$order_items",
-//   },
-//   {
-//     $unwind: "$product_variants",
-//   },
-//   {
-//     $unwind: "$products",
-//   },
-//   {
-//     $group: {
-//       _id: "$_id",
-//       user_id: { $first: "$user_id" },
-//       store_id: { $first: "$store_id" },
-//       is_paid: { $first: "$is_paid" },
-//       phone: { $first: "$phone" },
-//       address: { $first: "$address" },
-//       createdAt: { $first: "$createdAt" }, // ✅ Thêm vào
-//       updatedAt: { $first: "$updatedAt" }, // ✅ Thêm vào
-//       order_items: {
-//         $push: {
-//           quantity: "$order_items.quantity",
-//           snapshot_price: "$order_items.snapshot_price",
-//           product_variant: {
-//             price: "$product_variants.price",
-//             variant_values: "$product_variants.variant_values",
-//             product: {
-//               name: "$products.name",
-//             },
-//           },
-//         },
-//       },
-//     },
-//   },
-// ];
 const createOrder = async ({ store_id, items, phone, address, is_paid, user_id }, user) => {
   orderVerify("create", { store_id, items, phone, address, is_paid });
   const bulkUpdateOperations = [];
@@ -273,6 +156,8 @@ const getAllOrders = async (store_id) => {
     {
       $match: { store_id: new mongoose.Types.ObjectId(store_id) },
     },
+    { $sort: { createdAt: -1 } }, // Sắp xếp theo thời gian mới nhất
+
     ...baseQuery,
   ]);
   return orderDetails;

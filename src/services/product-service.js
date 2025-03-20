@@ -122,7 +122,6 @@ const getAllProducts = async (queryParams) => {
 
   if (value) query.name = { $regex: new RegExp(value, "i") };
   if (category_id) query.category_id = new mongoose.Types.ObjectId(category_id);
-  variants, typeof variants;
   if (variants?.length > 0) {
     query.variants = {
       $all: variants.map((variant) => ({
