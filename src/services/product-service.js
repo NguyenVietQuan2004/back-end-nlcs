@@ -306,14 +306,14 @@ const updateProduct = async ({ _id, ...productData }) => {
 const deleteProduct = async ({ product_id, store_id }) => {
   productVerify.productVerify("deleteProduct", { product_id, store_id });
 
-  // const existOrderConnectWithProduct = await ordersModel.findOne({
-  //   store_id,
-  //   listProductOrder: { $elemMatch: { _id: product_id } },
-  // });
+  const existOrderConnectWithProduct = await ordersModel.findOne({
+    store_id,
+    listProductOrder: { $elemMatch: { _id: product_id } },
+  });
 
-  // if (existOrderConnectWithProduct) {
-  //   throw new BadRequestError("This product is connecting with another order.");
-  // }
+  if (existOrderConnectWithProduct) {
+    throw new BadRequestError("This product is connecting with another order.");
+  }
 
   await ProductVariantModel.deleteMany({ product_id });
 
