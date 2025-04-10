@@ -209,6 +209,7 @@ const overviewOrder = async (store_id) => {
       {
         $match: {
           store_id: new mongoose.Types.ObjectId(store_id),
+          is_paid: true,
         },
       },
       ...baseQuery,
